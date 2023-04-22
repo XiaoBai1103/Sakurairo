@@ -10,17 +10,11 @@
 
 
 define('IRO_VERSION', wp_get_theme()->get('Version'));
-define('INT_VERSION', '18.0.0');
 define('BUILD_VERSION', '2');
 
 //Option-Framework
 
 require get_template_directory() . '/opt/option-framework.php';
-
-/**
- * composer autoload
- */
-require_once 'vendor/autoload.php';
 
 if (!function_exists('iro_opt')) {
     $GLOBALS['iro_options'] = get_option('iro_options');
@@ -29,22 +23,13 @@ if (!function_exists('iro_opt')) {
         return $GLOBALS['iro_options'][$option] ?? $default;
     }
 }
-if (!function_exists('iro_opt_update')) {
-    function iro_opt_update($option = '', $value = null)
-    {
-        $options = get_option('iro_options');
-        $options[$option] = $value;
-        update_option('iro_options', $options);
-    }
-}
-$shared_lib_basepath = iro_opt('shared_library_basepath') ? get_template_directory_uri() : (iro_opt('lib_cdn_path','https://fastly.jsdelivr.net/gh/mirai-mamori/Sakurairo@'). IRO_VERSION);
-$core_lib_basepath =  iro_opt('core_library_basepath') ? get_template_directory_uri() : (iro_opt('lib_cdn_path','https://fastly.jsdelivr.net/gh/mirai-mamori/Sakurairo@'). IRO_VERSION);
+$shared_lib_basepath = iro_opt('shared_library_basepath') ? get_template_directory_uri() : (iro_opt('lib_cdn_path','https://cdn.jsdelivr.net/gh/mirai-mamori/Sakurairo@'). IRO_VERSION);
+$core_lib_basepath =  iro_opt('core_library_basepath') ? get_template_directory_uri() : (iro_opt('lib_cdn_path','https://cdn.jsdelivr.net/gh/mirai-mamori/Sakurairo@'). IRO_VERSION);
 //Update-Checker
 
 require 'update-checker/update-checker.php';
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 function UpdateCheck($url,$flag = 'Sakurairo'){
-    return PucFactory::buildUpdateChecker(
+    return Puc_v4_Factory::buildUpdateChecker(
         $url,
         __FILE__,
         $flag
@@ -52,9 +37,9 @@ function UpdateCheck($url,$flag = 'Sakurairo'){
 }
 switch(iro_opt('iro_update_source')){
     case 'github':
-        $iroThemeUpdateChecker = UpdateCheck('https://github.com/mirai-mamori/Sakurairo','Sakurairo');
+        $iroThemeUpdateChecker = UpdateCheck('https://github.com/mirai-mamori/Sakurairo','unique-plugin-or-theme-slug');
         break;
-    case 'upyun':
+    case 'ucode':
         $iroThemeUpdateChecker = UpdateCheck('https://update.maho.cc/jsdelivr.json');
         break;
     case 'official_building':
@@ -64,8 +49,7 @@ switch(iro_opt('iro_update_source')){
 //error_reporting(E_ALL);
 error_reporting(E_ALL & ~E_NOTICE);
 
-if (!function_exists('akina_setup'))
-{
+if (!function_exists('akina_setup')) :
     function akina_setup()
     {
         /*
@@ -169,23 +153,22 @@ if (!function_exists('akina_setup'))
             }
             add_action('init', 'disable_emojis');
         }
-        if (!function_exists('disable_emojis_tinymce')) 
+
+        /**
+         * Filter function used to remove the tinymce emoji plugin.
+         *
+         * @param    array  $plugins
+         * @return   array             Difference betwen the two arrays
+         */
+        function disable_emojis_tinymce($plugins)
         {
-            /**
-             * Filter function used to remove the tinymce emoji plugin.
-             *
-             * @param    array  $plugins
-             * @return   array             Difference betwen the two arrays
-             */
-            function disable_emojis_tinymce($plugins)
-            {
-                if (is_array($plugins)) {
-                    return array_diff($plugins, array('wpemoji'));
-                } else {
-                    return array();
-                }
+            if (is_array($plugins)) {
+                return array_diff($plugins, array('wpemoji'));
+            } else {
+                return array();
             }
         }
+
         // 移除菜单冗余代码
         add_filter('nav_menu_css_class', 'my_css_attributes_filter', 100, 1);
         add_filter('nav_menu_item_id', 'my_css_attributes_filter', 100, 1);
@@ -195,7 +178,7 @@ if (!function_exists('akina_setup'))
             return is_array($var) ? array_intersect($var, array('current-menu-item', 'current-post-ancestor', 'current-menu-ancestor', 'current-menu-parent')) : '';
         }
     }
-};
+endif;
 add_action('after_setup_theme', 'akina_setup');
 
 //说说页面
@@ -277,12 +260,12 @@ function sakura_scripts()
         wp_enqueue_script('app-page', $core_lib_basepath . '/js/page.js', array('app','polyfills'), IRO_VERSION, true);
     }
     wp_enqueue_script('app', $core_lib_basepath . '/js/app.js', array('polyfills'), IRO_VERSION, true);
-    wp_enqueue_script('polyfills', $core_lib_basepath . '/js/polyfill.js', array(), IRO_VERSION, true);
+    wp_enqueue_script('polyfills', $core_lib_basepath . '/js/polyfills.js', array(), IRO_VERSION, true);
     if (is_singular() && comments_open() && get_option('thread_comments')) {
         wp_enqueue_script('comment-reply');
     }
     //前端脚本本地化
-    if (get_locale() != 'zh_CN') {
+    if (!get_locale("zh-CN")) {
         wp_localize_script('app', '_sakurairoi18n', array(
             '复制成功！' => __("Copied!", 'sakurairo'),
             '拷贝代码' => __("Copy Code", 'sakurairo'),
@@ -299,7 +282,7 @@ function sakura_scripts()
             '很高兴你翻到这里，但是真的没有了...' => __("Glad you come, but we've got nothing left.", 'sakurairo'),
             "文章" => __("Post", 'sakurairo'),
             "标签" => __("Tag", 'sakurairo'),
-            "分类" => __("Category", 'sakurairo'),
+            "目录" => __("Category", 'sakurairo'),
             "页面" => __("Page", 'sakurairo'),
             "评论" => __("Comment", 'sakurairo'),
             "已暂停..." => __("Paused...", 'sakurairo'),
@@ -340,7 +323,12 @@ function convertip($ip)
 {
     if (empty($ip)) $ip = get_comment_author_IP();
     $ch = curl_init();
-    $url = 'https://api.nmxc.ltd/ip/' . $ip;
+    $timeout = 5;
+    if (iro_opt('statistics_format') === 'type_1') {
+        $url = 'https://api.maho.cc/ip?ip=' . $ip;
+    } else {
+        $url = 'https://ip.taobao.com/outGetIpInfo?accessKey=alibaba-inc&ip=' . $ip;
+    }
     $timeout = 5;
     curl_setopt($ch, CURLOPT_URL, $url);
     // curl_setopt ($ch, CURLOPT_URL, 'http://ip.taobao.com/outGetIpInfo?accessKey=alibaba-inc&ip='.$ip);  
@@ -351,15 +339,28 @@ function convertip($ip)
     curl_close($ch);
     $result = null;
     $result = json_decode($file_contents, true);
-    if ($result && $result['code'] != 0) {
+    if ($result && $result['code'] == 0) {
+        if ($result['data']['country'] != '中国') {
+            return $result['data']['country'];
+        } else {
+            return $result['data']['country'] . '&nbsp;·&nbsp;' . $result['data']['region'] . '&nbsp;·&nbsp;' . $result['data']['city'] . '&nbsp;·&nbsp;' . $result['data']['isp'];
+        }
+    } else {
         return "未知";
     }
-    if ($result['data']['country'] != '中国') {
-        return $result['data']['country'];
-    }
-    return $result['data']['country'] . '&nbsp;·&nbsp;' . $result['data']['region'] . '&nbsp;·&nbsp;' . $result['data']['city'];
 }
 //Comment Location End
+
+/**
+ * COMMENT FORMATTING
+ *
+ * 标准的 lazyload 输出头像
+ * <?php echo str_replace( 'src=', 'src="https://cdn.jsdelivr.net/gh/moezx/cdn@3.0.1/img/svg/loader/index.ajax-spinner-preloader.svg" onerror="imgError(this,1)" data-src=', get_avatar( $comment->comment_author_email, '80', '', get_comment_author(), array( 'class' => array( 'lazyload' ) ) ) ); ?>
+ *
+ * 如果不延时是这样的
+ * <?php echo get_avatar( $comment->comment_author_email, '80', '', get_comment_author() ); ?>
+ *
+ */
 
 if (!function_exists('akina_comment_format')) {
     function akina_comment_format($comment, $args, $depth)
@@ -380,7 +381,7 @@ if (!function_exists('akina_comment_format')) {
                                 </div>
                                 <?php comment_reply_link(array_merge($args, array('depth' => $depth, 'max_depth' => $args['max_depth']))); ?>
                                 <div class="right">
-                                    <div class="info"><time datetime="<?php comment_date('Y-m-d'); ?>"><?php echo poi_time_since(strtotime($comment->comment_date), true); //comment_date(get_option('date_format'));  
+                                    <div class="info"><time datetime="<?php comment_date('Y-m-d'); ?>"><?php echo poi_time_since(strtotime($comment->comment_date_gmt), true); //comment_date(get_option('date_format'));  
                                                                                                         ?></time><?= siren_get_useragent($comment->comment_agent); ?><?php echo mobile_get_useragent_icon($comment->comment_agent); ?>&nbsp;<?php if (iro_opt('comment_location')) {
                                                                                                                                                                                                                                                         _e('Location', 'sakurairo'); /*来自*/ ?>: <?php echo convertip(get_comment_author_ip());
                                                                                                                                                                                                                                                                                                                                                                                                                 } ?>
@@ -388,14 +389,14 @@ if (!function_exists('akina_comment_format')) {
                                         $comment_ID = $comment->comment_ID;
                                         $i_private = get_comment_meta($comment_ID, '_private', true);
                                         $flag = null;
-                                        $flag .= ' <i class="fa-regular fa-snowflake"></i> <a href="javascript:;" data-actionp="set_private" data-idp="' . get_comment_id() . '" id="sp" class="sm">' . __("Private", "sakurairo") . ': <span class="has_set_private">';
+                                        $flag .= ' <i class="fa fa-snowflake-o" aria-hidden="true"></i> <a href="javascript:;" data-actionp="set_private" data-idp="' . get_comment_id() . '" id="sp" class="sm" style="color:rgba(0,0,0,.35)">' . __("Private", "sakurairo") . ': <span class="has_set_private">';
                                         if (!empty($i_private)) {
-                                            $flag .= __("Yes", "sakurairo") . ' <i class="fa-solid fa-lock"></i>';
+                                            $flag .= __("Yes", "sakurairo") . ' <i class="fa fa-lock" aria-hidden="true"></i>';
                                         } else {
-                                            $flag .= __("No", "sakurairo") . ' <i class="fa-solid fa-lock-open"></i>';
+                                            $flag .= __("No", "sakurairo") . ' <i class="fa fa-unlock" aria-hidden="true"></i>';
                                         }
                                         $flag .= '</span></a>';
-                                        $flag .= edit_comment_link('<i class="fa-solid fa-pen-to-square"></i> ' . __("Edit", "mashiro"), ' <span style="color:rgba(0,0,0,.35)">', '</span>');
+                                        $flag .= edit_comment_link('<i class="fa fa-pencil-square-o" aria-hidden="true"></i> ' . __("Edit", "mashiro"), ' <span style="color:rgba(0,0,0,.35)">', '</span>');
                                         echo $flag;
                                     } ?></div>
                                 </div>
@@ -422,16 +423,8 @@ function get_author_class($comment_author_email, $user_id)
     $author_count = count($wpdb->get_results(
         "SELECT comment_ID as author_count FROM $wpdb->comments WHERE comment_author_email = '$comment_author_email' "
     ));
-    # 等级梯度
-    $lv_array = [0, 5, 10, 20, 40, 80, 160];
-    $Lv = 0;
-    foreach ($lv_array as $key => $value) {
-        if ($value >= $author_count) break;
-        $Lv = $key;
-    }
-
-    // $Lv = $author_count < 5 ? 0 : ($author_count < 10 ? 1 : ($author_count < 20 ? 2 : ($author_count < 40 ? 3 : ($author_count < 80 ? 4 : ($author_count < 160 ? 5 : 6)))));
-    echo "<span class=\"showGrade{$Lv}\" title=\"Lv{$Lv}\"><img src=\"".iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/')."comment_level/level_{$Lv}.svg\" style=\"height: 1.5em; max-height: 1.5em; display: inline-block;\"></span>";
+    $Lv = $author_count < 5 ? 0 : ($author_count < 10 ? 1 : ($author_count < 20 ? 2 : ($author_count < 40 ? 3 : ($author_count < 80 ? 4 : ($author_count < 160 ? 5 : 6)))));
+    echo "<span class=\"showGrade{$Lv}\" title=\"Lv{$Lv}\"><img src=\"".iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/')."comment_level/level_{$Lv}.svg\" style=\"height: 1.5em; max-height: 1.5em; display: inline-block;\"></span>";
 }
 
 /**
@@ -447,8 +440,9 @@ function restyle_text($number)
         case "type_4": //23k 次访问
             if ($number >= 1000) {
                 return round($number / 1000, 2) . 'k';
+            } else {
+                return $number;
             }
-            return $number;
         default:
             return $number;
     }
@@ -456,33 +450,35 @@ function restyle_text($number)
 
 function set_post_views()
 {
-    if (!is_singular()) return;
-    
-    global $post;
-    $post_id = intval($post->ID);
-    if (!$post_id) return;
-    $views = (int) get_post_meta($post_id, 'views', true);
-    if (!update_post_meta($post_id, 'views', ($views + 1))) {
-        add_post_meta($post_id, 'views', 1, true);
+    if (is_singular()) {
+        global $post;
+        $post_id = intval($post->ID);
+        if ($post_id) {
+            $views = (int) get_post_meta($post_id, 'views', true);
+            if (!update_post_meta($post_id, 'views', ($views + 1))) {
+                add_post_meta($post_id, 'views', 1, true);
+            }
+        }
     }
 }
 
 add_action('get_header', 'set_post_views');
 
-function get_post_views($post_id) {
-    // 检查传入的参数是否有效
-    if (empty($post_id) || !is_numeric($post_id)) {
-        return 'Error: Invalid post ID.';
-    }
-    // 检查 WP-Statistics 插件是否安装
-    if ((function_exists('wp_statistics_pages')) && (iro_opt('statistics_api') == 'wp_statistics')){
-        // 使用 WP-Statistics 插件获取浏览量
-        $views = wp_statistics_pages('total', 'uri', $post_id);
-        return empty($views) ? 0 : $views;
+function get_post_views($post_id)
+{
+    if (iro_opt('statistics_api') == 'wp_statistics') {
+        if (!function_exists('wp_statistics_pages')) {
+            return __('Please install pulgin <a href="https://wordpress.org/plugins/wp-statistics/" target="_blank">WP-Statistics</a>', 'sakurairo');
+        } else {
+            return restyle_text(wp_statistics_pages('total', 'uri', $post_id));
+        }
     } else {
-        // 使用文章自定义字段获取浏览量
         $views = get_post_meta($post_id, 'views', true);
-        return empty($views) ? 0 : $views;
+        if ($views == '') {
+            return 0;
+        } else {
+            return restyle_text($views);
+        }
     }
 }
 
@@ -506,10 +502,10 @@ function get_the_link_items($id = null)
             }
 
             if (empty($bookmark->link_image)) {
-                $bookmark->link_image = 'https://s.nmxc.ltd/sakurairo_vision/@2.6/basic/friendlink.jpg';
+                $bookmark->link_image = 'https://view.moezx.cc/images/2017/12/30/Transparent_Akkarin.th.jpg';
             }
 
-            $output .= '<li class="link-item"><a class="link-item-inner effect-apollo" href="' . $bookmark->link_url . '" title="' . $bookmark->link_description . '" target="_blank" rel="friend"><img class="lazyload" onerror="imgError(this,1)" data-src="' . $bookmark->link_image . '" src="' . iro_opt('load_in_svg') . '"></br><span class="sitename" style="'. $bookmark->link_notes .'">' . $bookmark->link_name . '</span><div class="linkdes">' . $bookmark->link_description . '</div></a></li>';
+            $output .= '<li class="link-item"><a class="link-item-inner effect-apollo" href="' . $bookmark->link_url . '" title="' . $bookmark->link_description . '" target="_blank" rel="friend"><img class="lazyload" onerror="imgError(this,1)" data-src="' . $bookmark->link_image . '" src="' . iro_opt('load_in_svg') . '"><span class="sitename">' . $bookmark->link_name . '</span><div class="linkdes">' . $bookmark->link_description . '</div></a></li>';
         }
         $output .= '</ul>';
     }
@@ -520,18 +516,17 @@ function get_link_items()
 {
     $linkcats = get_terms('link_category');
     $result = null;
-    if (empty($linkcats)) return get_the_link_items();    
-    $link_category_need_display = get_post_meta(get_queried_object_id(), 'link_category_need_display', false);
-    foreach ($linkcats as $linkcat) {
-        if (!empty($link_category_need_display) && !in_array($linkcat->name, $link_category_need_display, true)) {
-            continue;
-        }
-        $result .= '<h3 class="link-title"><span class="link-fix">' . $linkcat->name . '</span></h3>';
-        if ($linkcat->description) {
-            $result .= '<div class="link-description">' . $linkcat->description . '</div>';
-        }
+    if (!empty($linkcats)) {
+        foreach ($linkcats as $linkcat) {
+            $result .= '<h3 class="link-title"><span class="link-fix">' . $linkcat->name . '</span></h3>';
+            if ($linkcat->description) {
+                $result .= '<div class="link-description">' . $linkcat->description . '</div>';
+            }
 
-        $result .= get_the_link_items($linkcat->term_id);
+            $result .= get_the_link_items($linkcat->term_id);
+        }
+    } else {
+        $result = get_the_link_items();
     }
     return $result;
 }
@@ -549,21 +544,17 @@ if (iro_opt('gravatar_proxy')) {
 }
 
 /*
- * 检查主题版本号，并在更新主题后执行设置选项值的更新
+ * 自定义默认头像
  */
-function visual_resource_updates($specified_version, $option_name, $new_value) {
-    $theme = wp_get_theme();
-    $current_version = $theme->get('Version');
-    if (version_compare($current_version, $specified_version, '>')) {
-        $option_value = iro_opt($option_name);
-        if (strpos($option_value, '@') === false || substr($option_value, strpos($option_value, '@') + 1) !== $new_value) {
-            $option_value = preg_replace('/@.*/', '@' . $new_value, $option_value);
-        }
-        iro_opt_update($option_name, $option_value);
-    }
-}
+add_filter('avatar_defaults', 'mytheme_default_avatar');
 
-visual_resource_updates('2.5.6', 'vision_resource_basepath', '2.6/');
+function mytheme_default_avatar($avatar_defaults)
+{
+    //$new_avatar_url = get_template_directory_uri() . '/images/default_avatar.png';
+    $new_avatar_url = 'https://cn.gravatar.com/avatar/b745710ae6b0ce9dfb13f5b7c0956be1';
+    $avatar_defaults[$new_avatar_url] = 'Default Avatar';
+    return $avatar_defaults;
+}
 
 /*
  * 阻止站内文章互相Pingback
@@ -612,16 +603,16 @@ add_filter('body_class', 'akina_body_classes');
 add_filter('upload_dir', 'wpjam_custom_upload_dir');
 function wpjam_custom_upload_dir($uploads)
 {
-/*     $upload_path = '';
- */    $upload_url_path = iro_opt('image_cdn');
+    $upload_path = '';
+    $upload_url_path = iro_opt('image_cdn');
 
-/*     if (empty($upload_path) || 'wp-content/uploads' == $upload_path) {
+    if (empty($upload_path) || 'wp-content/uploads' == $upload_path) {
         $uploads['basedir'] = WP_CONTENT_DIR . '/uploads';
     } elseif (0 !== strpos($upload_path, ABSPATH)) {
         $uploads['basedir'] = path_join(ABSPATH, $upload_path);
     } else {
         $uploads['basedir'] = $upload_path;
-    } */
+    }
 
     $uploads['path'] = $uploads['basedir'] . $uploads['subdir'];
 
@@ -708,7 +699,7 @@ function download($atts, $content = null)
 {
     return '<a class="download" href="' . $content . '" rel="external"
 target="_blank" title="'.__("Download Link","sakurairo").'">
-<span><i class="fa-solid fa-download"></i>Download</span></a>';
+<span><i class="iconfont down icon-pulldown"></i>Download</span></a>';
 }
 add_shortcode("download", "download");
 
@@ -755,9 +746,9 @@ add_filter('login_headerurl', 'custom_loginlogo_url');
 //Login Page Footer
 function custom_html()
 {
-    $loginbg = iro_opt('login_background') ?: iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'series/login_background.webp'; ?>
+    $loginbg = iro_opt('login_background') ?: iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'series/login_background.webp'; ?>
         <script type="text/javascript">
-            document.body.insertAdjacentHTML("afterbegin", "<div class=\"loading\"><img src=\"<?=iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/')?>basic/login_loading.gif\" width=\"58\" height=\"10\"></div>");
+            document.body.insertAdjacentHTML("afterbegin", "<div class=\"loading\"><img src=\"<?=iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/')?>basic/login_loading.gif\" width=\"58\" height=\"10\"></div>");
             document.head.insertAdjacentHTML("afterbegin", "<style>.show{opacity:1;}.hide{opacity:0;transition: opacity 400ms;}</style>");
             const loading = document.querySelector(".loading"),
              src = "<?= $loginbg ?>",
@@ -777,10 +768,8 @@ function custom_html()
             setTimeout(afterLoaded, 3000)
             document.addEventListener("DOMContentLoaded", ()=>{
         document.querySelector("h1 a").style.backgroundImage = "url('<?= iro_opt('login_logo_img')?>')";
-        forgetmenot = document.querySelector(".forgetmenot");
-        if (forgetmenot){
-            forgetmenot.outerHTML = '<p class="forgetmenot"><?=__("Remember me","sakurairo")?><input name="rememberme" id="rememberme" value="forever" type="checkbox"><label for="rememberme" style="float: right;margin-top: 5px;transform: scale(2);margin-right: -10px;"></label></p>';
-        }
+        document.querySelector(".forgetmenot").outerHTML = '<p class="forgetmenot"><?=__("Remember me","sakurairo")?><input name="rememberme" id="rememberme" value="forever" type="checkbox"><label for="rememberme" style="float: right;margin-top: 5px;transform: scale(2);margin-right: -10px;"></label></p>';
+        
         const captchaimg = document.getElementById("captchaimg");
         captchaimg && captchaimg.addEventListener("click",(e)=>{
             fetch("<?= rest_url('sakura/v1/captcha/create')?>")
@@ -801,17 +790,20 @@ add_action('login_footer', 'custom_html');
 //* Add custom message to WordPress login page
 function smallenvelop_login_message($message)
 {
-    return empty($message) ? '<p class="message"><strong>You may try 3 times for every 5 minutes!</strong></p>' : $message;
+    if (empty($message)) {
+        return '<p class="message"><strong>You may try 3 times for every 5 minutes!</strong></p>';
+    } else {
+        return $message;
+    }
 }
 //add_filter( 'login_message', 'smallenvelop_login_message' );
 
 //Fix password reset bug </>
 function resetpassword_message_fix($message)
 {
-    return str_replace(['>','<'], '', $message);
-    // $message = str_replace('<', '', $message);
-    // $message = str_replace('>', '', $message);
-    // return $message;
+    $message = str_replace('<', '', $message);
+    $message = str_replace('>', '', $message);
+    return $message;
 }
 add_filter('retrieve_password_message', 'resetpassword_message_fix');
 
@@ -874,7 +866,7 @@ function comment_mail_notify($comment_id)
             . trim($comment->comment_content) . '</div>
 
       <div style="text-align: center;">
-          <img src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'basic/comment-mail.png" alt="hr" style="width:100%;
+          <img src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'basic/comment-mail.png" alt="hr" style="width:100%;
                                                                                                   margin:5px auto 5px auto;
                                                                                                   display: block;">
           <a style="text-transform: uppercase;
@@ -892,7 +884,7 @@ function comment_mail_notify($comment_id)
     </div>
 ';
         $message = convert_smilies($message);
-        $message = str_replace('{{', '<img src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'/smilies/bilipng/emoji_', $message);
+        $message = str_replace('{{', '<img src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'/smilies/bilipng/emoji_', $message);
         $message = str_replace('}}', '.png" alt="emoji" style="height: 2em; max-height: 2em;">', $message);
 
         $message = str_replace('{UPLOAD}', 'https://i.loli.net/', $message);
@@ -985,9 +977,9 @@ function push_tieba_smilies()
     $smiliesgs = '.' . $type;
     foreach ($tiebaname as $tieba_Name) {
         // 选择面版
-        $return_smiles = $return_smiles . '<span title="' . $tieba_Name . '" onclick="grin(' . "'" . $tieba_Name . "'" . ',type = \'tieba\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'smilies/' . $tiebaimgdir . 'icon_' . $tieba_Name . $smiliesgs . '" /></span>';
+        $return_smiles = $return_smiles . '<span title="' . $tieba_Name . '" onclick="grin(' . "'" . $tieba_Name . "'" . ',type = \'tieba\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'smilies/' . $tiebaimgdir . 'icon_' . $tieba_Name . $smiliesgs . '" /></span>';
         // 正文转换
-        $wpsmiliestrans['::' . $tieba_Name . '::'] = '<span title="' . $tieba_Name . '" onclick="grin(' . "'" . $tieba_Name . "'" . ',type = \'tieba\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'smilies/' . $tiebaimgdir . 'icon_' . $tieba_Name . $smiliesgs . '" /></span>';
+        $wpsmiliestrans['::' . $tieba_Name . '::'] = '<span title="' . $tieba_Name . '" onclick="grin(' . "'" . $tieba_Name . "'" . ',type = \'tieba\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'smilies/' . $tiebaimgdir . 'icon_' . $tieba_Name . $smiliesgs . '" /></span>';
     }
     return $return_smiles;
 }
@@ -1063,9 +1055,9 @@ function push_bili_smilies()
     $smiliesgs = '.' . $type;
     foreach ($name as $smilies_Name) {
         // 选择面版
-        $return_smiles = $return_smiles . '<span title="' . $smilies_Name . '" onclick="grin(' . "'" . $smilies_Name . "'" . ',type = \'Math\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'smilies/' . $biliimgdir . 'emoji_' . $smilies_Name . $smiliesgs . '" /></span>';
+        $return_smiles = $return_smiles . '<span title="' . $smilies_Name . '" onclick="grin(' . "'" . $smilies_Name . "'" . ',type = \'Math\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'smilies/' . $biliimgdir . 'emoji_' . $smilies_Name . $smiliesgs . '" /></span>';
         // 正文转换
-        $bilismiliestrans['{{' . $smilies_Name . '}}'] = '<span title="' . $smilies_Name . '" onclick="grin(' . "'" . $smilies_Name . "'" . ',type = \'Math\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'smilies/' . $biliimgdir . 'emoji_' . $smilies_Name . $smiliesgs . '" /></span>';
+        $bilismiliestrans['{{' . $smilies_Name . '}}'] = '<span title="' . $smilies_Name . '" onclick="grin(' . "'" . $smilies_Name . "'" . ',type = \'Math\')"><img loading="lazy" src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'smilies/' . $biliimgdir . 'emoji_' . $smilies_Name . $smiliesgs . '" /></span>';
     }
     return $return_smiles;
 }
@@ -1097,7 +1089,7 @@ function bili_smile_filter_rss($content)
     $type = is_webp() ? 'webp' : 'png';
     $biliimgdir = 'bili' . $type . '/';
     $smiliesgs = '.' . $type;
-    $content = str_replace('{{', '<img src="'.iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'smilies/' . $biliimgdir, $content);
+    $content = str_replace('{{', '<img src="'.iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'smilies/' . $biliimgdir, $content);
     $content = str_replace('}}', $smilesgs . '" alt="emoji" style="height: 2em; max-height: 2em;">', $content);
     $content =  str_replace('[img]', '<img src="', $content);
     $content =  str_replace('[/img]', '" style="display: block;margin-left: auto;margin-right: auto;">', $content);
@@ -1116,36 +1108,20 @@ add_filter('the_content', 'toc_support');
 add_filter('the_excerpt_rss', 'toc_support');
 add_filter('the_content_feed', 'toc_support');
 
-function check_title_tags($content) {
-    $dom = new DOMDocument();
-    @$dom->loadHTML($content);
-    $headings = $dom->getElementsByTagName('h1');
-    for ($i = 1; $i <= 6; $i++) {
-        $headings = $dom->getElementsByTagName('h' . $i);
-        foreach ($headings as $heading) {
-            if (trim($heading->nodeValue) != '') {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 // 显示访客当前 IP
 function get_the_user_ip()
 {
-    // if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
-    //     //check ip from share internet
-    //     $ip = $_SERVER['HTTP_CLIENT_IP'];
-    // } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    //     //to check ip is pass from proxy
-    //     $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    // } else {
-    //     $ip = $_SERVER['REMOTE_ADDR'];
-    // }
+    if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        //check ip from share internet
+        $ip = $_SERVER['HTTP_CLIENT_IP'];
+    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        //to check ip is pass from proxy
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    } else {
+        $ip = $_SERVER['REMOTE_ADDR'];
+    }
     // 简略版
     // $ip = $_SERVER['HTTP_CLIENT_IP'] ?: ($_SERVER['HTTP_X_FORWARDED_FOR'] ?: $_SERVER['REMOTE_ADDR']);
-    $ip = $_SERVER['HTTP_CLIENT_IP'] ?? $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'];
     return apply_filters('wpb_get_ip', $ip);
 }
 
@@ -1181,73 +1157,51 @@ function siren_private()
     if ($action == 'set_private') {
         update_comment_meta($comment_id, '_private', 'true');
         $i_private = get_comment_meta($comment_ID, '_private', true);
-        echo empty($i_private) ? '是' : '否';
+        echo !empty($i_private) ? '否' : '是';
     }
     die;
 }
 
 //时间序列
-function memory_archives_list() {
-    // 尝试从缓存中获取结果
-    $cache_key = 'memory_archives_list_' . get_locale();
-    $output = get_transient($cache_key);
+function memory_archives_list()
+{
+    // 始终为true, 为什么要这么做呢 
+    if (true) {
+        $output = '<div id="archives"><p style="text-align:right;">[<span id="al_expand_collapse">' . __("All expand/collapse", "sakurairo") /*全部展开/收缩*/ . '</span>]<!-- (注: 点击月份可以展开)--></p>';
+        $the_query = new WP_Query('posts_per_page=-1&ignore_sticky_posts=1&post_type=post'); //update: 加上忽略置顶文章
+        $year = 0;
+        $mon = 0;
+        $i = 0;
+        $j = 0;
+        while ($the_query->have_posts()) : $the_query->the_post();
+            $year_tmp = get_the_time('Y');
+            $mon_tmp = get_the_time('m');
+            $y = $year;
+            $m = $mon;
+            if ($mon != $mon_tmp && $mon > 0) {
+                $output .= '</ul></li>';
+            }
 
-    if ($output !== false) {
-        echo $output;
-        return;
+            if ($year != $year_tmp && $year > 0) {
+                $output .= '</ul>';
+            }
+
+            if ($year != $year_tmp) {
+                $year = $year_tmp;
+                $output .= '<h3 class="al_year">' . $year . __(" ", "year", "sakurairo") . /*年*/ ' </h3><ul class="al_mon_list">'; //输出年份
+            }
+            if ($mon != $mon_tmp) {
+                $mon = $mon_tmp;
+                $output .= '<li class="al_li"><span class="al_mon"><span style="color:' . iro_opt('theme_skin') . ';">' . get_the_time('M') . '</span> (<span id="post-num"></span>' . __(" post(s)", "sakurairo") /*篇文章*/ . ')</span><ul class="al_post_list">'; //输出月份
+            }
+            $output .= '<li>' . '<a href="' . get_permalink() . '"><span style="color:' . iro_opt('theme_skin') . ';">' /*get_the_time('d'.__(" ","sakurairo")) 日*/ . '</span>' . get_the_title() . ' <span>(' . get_post_views(get_the_ID()) . ' <span class="fa fa-fire" aria-hidden="true"></span> / ' . get_comments_number('0', '1', '%') . ' <span class="fa fa-commenting" aria-hidden="true"></span>)</span></a></li>'; //输出文章日期和标题
+        endwhile;
+        wp_reset_postdata();
+        $output .= '</ul></li></ul> <!--<ul class="al_mon_list"><li><ul class="al_post_list" style="display: block;"><li>博客已经萌萌哒运行了<span id="monitorday"></span>天</li></ul></li></ul>--></div>';
+        #update_option('memory_archives_list', $output);
     }
-    $output = '<div id="archives"><p style="text-align:right;">[<span id="al_expand_collapse">' . __("All expand/collapse", "sakurairo") /*全部展开/收缩*/ . '</span>]<!-- (注: 点击月份可以展开)--></p>';
-    $posts = get_posts(array(
-        'posts_per_page' => -1,
-        'ignore_sticky_posts' => true,
-        'post_type' => 'post'
-    ));
-
-    $posts_sorted_by_time = [];
-    foreach ($posts as $post) {
-        $post_id = $post->ID;
-        $post_time = get_post_time('U', false, $post_id);
-        $posts_sorted_by_time[$post_time] = $post;
-    }
-    krsort($posts_sorted_by_time); // 按时间倒序排列
-
-    $year = 0;
-    $mon = 0;
-    foreach ($posts_sorted_by_time as $post) {
-        setup_postdata($post);
-        $year_tmp = get_post_time('Y', false, $post);
-        $mon_tmp = get_post_time('m', false, $post);
-        $post_id = $post->ID;
-        $post_views = get_post_views($post_id);
-        if ($mon != $mon_tmp && $mon > 0) {
-            $output .= '</ul></li>';
-        }
-
-        if ($year != $year_tmp && $year > 0) {
-            $output .= '</ul>';
-        }
-
-        if ($year != $year_tmp) {
-            $year = $year_tmp;
-            $output .= '<h3 class="al_year">' . $year . __(" ", "year", "sakurairo") . /*年*/ ' </h3><ul class="al_mon_list">'; //输出年份
-        }
-        if ($mon != $mon_tmp) {
-            $mon = $mon_tmp;
-            $output .= '<li class="al_li"><span class="al_mon"><span style="color:' . iro_opt('theme_skin') . ';">' . get_post_time('M', false, $post) . '</span> (<span id="post-num"></span>' . __(" post(s)", "sakurairo") /*篇文章*/ . ')</span><ul class="al_post_list">'; //输出月份
-        }
-        $output .= '<li>' . '<a href="' . get_permalink($post) . '"><span style="color:' . iro_opt('theme_skin') . ';">' /*get_post_time('d'.__(" ","sakurairo"), false, $post) 日*/ . '</span>' . get_the_title($post) . ' <span>(' . $post_views . ' <span class="fa-regular fa-gem" aria-hidden="true"></span> / ' . get_comments_number($post) . ' <span class="fa-regular fa-comment-dots" aria-hidden="true"></span>)</span></a></li>'; 
-    }
-    wp_reset_postdata();
-    $output .= '</ul></li></ul> <!--<ul class="al_mon_list"><li><ul class="al_post_list" style="display: block;"><li>博客已经萌萌哒运行了<span id="monitorday"></span>天</li></ul></li></ul>--></div>';
-    set_transient($cache_key, $output, 3600);
     echo $output;
 }
-
-// 在保存文章后清空缓存
-function clear_memory_archives_list_cache($post_id) {
-    delete_transient('memory_archives_list_' . get_locale());
-}
-add_action('save_post', 'clear_memory_archives_list_cache');
 
 /*
  * 隐藏 Dashboard
@@ -1314,12 +1268,6 @@ function GBsubstr($string, $start, $length)
     }
 }
 
-/**
- * chatgpt excerpt
- */
-require_once __DIR__.'/inc/chatgpt/hooks.php';
-IROChatGPT\apply_chatgpt_hook();
-
 function excerpt_length($exp)
 {
     if (!function_exists('mb_substr')) {
@@ -1332,7 +1280,7 @@ function excerpt_length($exp)
     }
     return $exp;
 }
-add_filter('the_excerpt', 'excerpt_length',11);
+add_filter('the_excerpt', 'excerpt_length');
 
 /*
  * 后台路径
@@ -1351,122 +1299,60 @@ function admin_ini()
 {
     wp_enqueue_style('admin-styles-fix-icon', get_site_url() . '/wp-includes/css/dashicons.css');
     wp_enqueue_style('cus-styles-fit', get_template_directory_uri() . '/css/dashboard-fix.css');
+    wp_enqueue_script('lazyload', 'https://cdn.jsdelivr.net/npm/lazyload@2.0.0-beta.2/lazyload.min.js');
 }
 add_action('admin_enqueue_scripts', 'admin_ini');
+
+function custom_admin_js()
+{
+    echo '<script>
+    window.onload=function(){
+        lazyload();
+
+        try{
+            document.querySelector("#scheme-tip .notice-dismiss").addEventListener("click", function(){
+                location.href="?scheme-tip-dismissed' . BUILD_VERSION . '";
+            });
+        } catch(e){}
+    }
+    </script>';
+}
+add_action('admin_footer', 'custom_admin_js');
 
 /*
  * 后台通知
  */
-
-/**
- * 在提供权限的情况下，为管理员用户显示通知并更新 meta 值
- */
-function theme_admin_notice_callback() {
-    // 判断当前用户是否为管理员
-    if ( !current_user_can( 'manage_options' ) ) {
-        return;
-    }
-
-    // 读取 meta 值
-    $meta_value = get_user_meta( get_current_user_id(), 'theme_admin_notice', true );
-
-    // 判断 meta 值是否存在
-    if ( $meta_value ) {
-        return; // 如果存在，退出函数，避免重复加载通知
-    }
-
-    // 显示通知
-    $theme_name = 'Sakurairo';
-    switch ( get_locale() ) {
+function scheme_tip()
+{
+    switch(get_user_locale(get_current_user_id())){
         case 'zh_CN':
-            $thankyou    = '感谢你使用 '.$theme_name.' 主题！这里有一些需要你的许可的东西(*/ω＼*)';
-            $dislike     = '不，谢谢';
-            $allow_send  = '允许发送你的主题版本数据以便官方统计';
+            $msg = '<b>试一试新后台界面<a href="/wp-admin/profile.php">配色方案</a>吧？</b>';
             break;
-
         case 'zh_TW':
-            $thankyou    = '感謝你使用 '.$theme_name.' 主題！以下是一些需要你許可的內容。';
-            $dislike     = '謝謝，不用了';
-            $allow_send  = '允許出於統計目的發送主題版本数据';
+            $msg = '<b>試一試新後台界面<a href="/wp-admin/profile.php">色彩配置</a>吧？</b>';
             break;
-
-        case 'ja':
-            $thankyou    = 'ご使用いただきありがとうございます！以下は、あなたの許可が必要なコンテンツです。';
-            $dislike     = 'いいえ、結構です';
-            $allow_send  = '統計目的のためにあなたのテーマバージョンを送信することを許可する';
+        case 'ja-JP':
+            $msg = '<b>新しい<a href="/wp-admin/profile.php">管理画面の配色</a>を試しますか？</b>';
             break;
-
         default:
-            $thankyou    = 'Thank you for using the '.$theme_name.' theme! There is something that needs your approval.';
-            $dislike     = 'No, thanks';
-            $allow_send  = 'Allow sending your theme version for statistical purposes';
-            break;
+            $msg = '<b>Why not try the new admin dashboard color scheme <a href="/wp-admin/profile.php">here</a>?</b>';
     }
-    ?>
-    <div class="notice notice-success" id="send-ver-tip">
-        <p><?php echo $thankyou; ?></p>
-        <button class="button" onclick="dismiss_notice()"><?php echo $dislike; ?></button>
-        <button class="button" onclick="update_option()"><?php echo $allow_send; ?></button>
-    </div>
-    <script>
-        function dismiss_notice() {
-            // 隐藏通知
-            document.getElementById( "send-ver-tip" ).style.display = "none";
-            // 写入 1 到 meta
-            var data = new FormData();
-            data.append( 'action', 'update_theme_admin_notice_meta' );
-            data.append( 'user_id', '<?php echo get_current_user_id(); ?>' );
-            data.append( 'meta_key', 'theme_admin_notice' );
-            data.append( 'meta_value', '1' );
-            fetch( '<?php echo admin_url( 'admin-ajax.php' ); ?>', {
-                method: 'POST',
-                body: data
-            } );
-        }
-
-        function update_option() {
-            // 隐藏通知
-            document.getElementById( "send-ver-tip" ).style.display = "none";
-            // 发送 AJAX 请求
-            var xhr = new XMLHttpRequest();
-            xhr.open( "POST", "<?php echo admin_url( 'admin-ajax.php' ); ?>", true );
-            xhr.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
-            xhr.send( "action=update_theme_option&option=send_theme_version&value=true" );
-
-            // 写入 1 到 meta
-            var data = new FormData();
-            data.append( 'action', 'update_theme_admin_notice_meta' );
-            data.append( 'user_id', '<?php echo get_current_user_id(); ?>' );
-            data.append( 'meta_key', 'theme_admin_notice' );
-            data.append( 'meta_value', '1' );
-            fetch( '<?php echo admin_url( 'admin-ajax.php' ); ?>', {
-                method: 'POST',
-                body: data
-            } );
-        }
-    </script>
-    <?php
-}
-add_action('admin_notices', 'theme_admin_notice_callback');
-
-// AJAX 处理函数 - 更新主题选项
-add_action( 'wp_ajax_update_theme_option', 'update_theme_option' );
-function update_theme_option() {
-    $option = $_POST['option'];
-    $value  = sanitize_text_field( $_POST['value'] );
-    iro_opt_update( $option, $value );
-    wp_die();
+    $user_id = get_current_user_id();
+    if (!get_user_meta($user_id, 'scheme-tip-dismissed' . BUILD_VERSION)) {
+        echo '<div class="notice notice-success is-dismissible" id="scheme-tip"><p><b>' . $msg . '</b></p></div>';
+    }
 }
 
-// AJAX 处理函数 - 写入 theme_admin_notice 元值
-add_action( 'wp_ajax_update_theme_admin_notice_meta', 'update_theme_admin_notice_meta' );
-function update_theme_admin_notice_meta() {
-    $user_id     = $_POST['user_id'];
-    $meta_key    = $_POST['meta_key'];
-    $meta_value  = sanitize_text_field( $_POST['meta_value'] );
-    update_user_meta( $user_id, $meta_key, $meta_value );
-    wp_die();
+add_action('admin_notices', 'scheme_tip');
+
+function scheme_tip_dismissed()
+{
+    $user_id = get_current_user_id();
+    if (isset($_GET['scheme-tip-dismissed' . BUILD_VERSION])) {
+        add_user_meta($user_id, 'scheme-tip-dismissed' . BUILD_VERSION, 'true', true);
+    }
 }
+add_action('admin_init', 'scheme_tip_dismissed');
 
 //dashboard scheme
 function dash_scheme($key, $name, $col1, $col2, $col3, $col4, $base, $focus, $current, $rules = "")
@@ -1524,8 +1410,8 @@ add_action('admin_head', 'custom_admin_open_sans_style');
 // WordPress Custom Font @ Admin
 function custom_admin_open_sans_font()
 {
-    echo '<link href="https://' . iro_opt('gfonts_api','fonts.loli.net') . '/css?family=Noto+Serif+SC&display=swap" rel="stylesheet">' . PHP_EOL;
-    echo '<style>body, #wpadminbar *:not([class="ab-icon"]), .wp-core-ui, .media-menu, .media-frame *, .media-modal *{font-family: "Noto Serif SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;}</style>' . PHP_EOL;
+    echo '<link href="https://' . iro_opt('gfonts_api','fonts.loli.net') . '/css?family=Merriweather+Sans|Noto+Serif+SC&display=swap" rel="stylesheet">' . PHP_EOL;
+    echo '<style>body, #wpadminbar *:not([class="ab-icon"]), .wp-core-ui, .media-menu, .media-frame *, .media-modal *{font-family:"Noto Serif SC","Source Han Serif SC","Source Han Serif","source-han-serif-sc","PT Serif","SongTi SC","MicroSoft Yahei",Georgia,serif !important;}</style>' . PHP_EOL;
 }
 add_action('admin_head', 'custom_admin_open_sans_font');
 
@@ -1533,8 +1419,8 @@ add_action('admin_head', 'custom_admin_open_sans_font');
 function custom_admin_open_sans_font_frontend_toolbar()
 {
     if (current_user_can('administrator') && is_admin_bar_showing()) {
-        echo '<link href="https://' . iro_opt('gfonts_api','fonts.loli.net') . '/css?family=Noto+Serif+SC&display=swap" rel="stylesheet">' . PHP_EOL;
-        echo '<style>#wpadminbar *:not([class="ab-icon"]){font-family: "Noto Serif SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;}</style>' . PHP_EOL;
+        echo '<link href="https://' . iro_opt('gfonts_api','fonts.loli.net') . '/css?family=Merriweather+Sans&display=swap" rel="stylesheet">' . PHP_EOL;
+        echo '<style>#wpadminbar *:not([class="ab-icon"]){font-family:"Noto Serif SC","Source Han Serif SC","Source Han Serif","source-han-serif-sc","PT Serif","SongTi SC","MicroSoft Yahei",Georgia,serif !important;}</style>' . PHP_EOL;
     }
 }
 add_action('wp_head', 'custom_admin_open_sans_font_frontend_toolbar');
@@ -1544,7 +1430,7 @@ function custom_admin_open_sans_font_login_page()
 {
     if (stripos($_SERVER["SCRIPT_NAME"], strrchr(wp_login_url(), '/')) !== false) {
         echo '<link href="https://' . iro_opt('gfonts_api','fonts.loli.net') . '/css?family=Noto+Serif+SC&display=swap" rel="stylesheet">' . PHP_EOL;
-        echo '<style>body{font-family: "Noto Serif SC", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;}</style>' . PHP_EOL;
+        echo '<style>body{font-family:"Noto Serif SC","Source Han Serif SC","Source Han Serif","source-han-serif-sc","PT Serif","SongTi SC","MicroSoft Yahei",Georgia,serif !important;}</style>' . PHP_EOL;
     }
 }
 add_action('login_head', 'custom_admin_open_sans_font_login_page');
@@ -1717,52 +1603,25 @@ function change_avatar($avatar)
         $qq_number = get_comment_meta($comment->comment_ID, 'new_field_qq', true);
         if (iro_opt('qq_avatar_link') == 'off') {
             return '<img src="https://q2.qlogo.cn/headimg_dl?dst_uin=' . $qq_number . '&spec=100" class="lazyload avatar avatar-24 photo" alt="😀" width="24" height="24" onerror="imgError(this,1)">';
-        }
-        if (iro_opt('qq_avatar_link') == 'type_3') {
+        } elseif (iro_opt('qq_avatar_link') == 'type_3') {
             $qqavatar = file_get_contents('http://ptlogin2.qq.com/getface?appid=1006102&imgtype=3&uin=' . $qq_number);
             preg_match('/:\"([^\"]*)\"/i', $qqavatar, $matches);
             return '<img src="' . $matches[1] . '" class="lazyload avatar avatar-24 photo" alt="😀" width="24" height="24" onerror="imgError(this,1)">';
+        } else {
+            $iv = str_repeat($sakura_privkey, 2);
+            $encrypted = openssl_encrypt($qq_number, 'aes-128-cbc', $sakura_privkey, 0, $iv);
+            $encrypted = urlencode(base64_encode($encrypted));
+            return '<img src="' . rest_url("sakura/v1/qqinfo/avatar") . '?qq=' . $encrypted . '" class="lazyload avatar avatar-24 photo" alt="😀" width="24" height="24" onerror="imgError(this,1)">';
         }
-        $iv = str_repeat($sakura_privkey, 2);
-        $encrypted = openssl_encrypt($qq_number, 'aes-128-cbc', $sakura_privkey, 0, $iv);
-        
-        $encrypted = urlencode(base64_encode($encrypted));
-        return '<img src="' . rest_url("sakura/v1/qqinfo/avatar") . '?qq=' . $encrypted . '" class="lazyload avatar avatar-24 photo" alt="😀" width="24" height="24" onerror="imgError(this,1)">';
-        
     }
     return $avatar;
 }
 
-
-function get_random_url(string $url):string
-{
-    $array = parse_url($url);
-    if (!isset($array['query'])) {
-        // 无参数
-        $url .= '?';
-    } else {
-        // 有参数
-        $url .= '&';
-    }
-    return $url.random_int(1,100);
-}
-
-
 // default feature image
-function DEFAULT_FEATURE_IMAGE(string $size='source'):string
+function DEFAULT_FEATURE_IMAGE():string
 {
-    if (iro_opt('post_cover_options') == 'type_2') {
-        return get_random_url(iro_opt('post_cover'));
-    }
-    if (iro_opt('random_graphs_options') == 'external_api'){
-        return get_random_url(iro_opt('random_graphs_link'));
-    }
     $_api_url = rest_url('sakura/v1/image/feature');
-    $rand = rand(1, 100);
-    # 拼接符
-    $splice = strpos($_api_url, 'index.php?') !== false ? '&' : '?';
-    $_api_url = "{$_api_url}{$splice}size={$size}&$rand";
-    return $_api_url;
+    return $_api_url . (preg_match('/index.php\?/i', $_api_url) ? '&' : '?') . rand(1, 1000);
 }
 
 //评论回复
@@ -1794,7 +1653,7 @@ function markdown_parser($incoming_comment)
     global $wpdb, $comment_markdown_content;
     $re = '/```([\s\S]*?)```[\s]*|`{1,2}[^`](.*?)`{1,2}|\[.*?\]\([\s\S]*?\)/m';
     if (preg_replace($re, 'temp', $incoming_comment['comment_content']) != strip_tags(preg_replace($re, 'temp', $incoming_comment['comment_content']))) {
-        siren_ajax_comment_err('评论只支持Markdown啦，见谅╮(￣▽￣)╭<br>Markdown Supported while <i class="fa-solid fa-code"></i> Forbidden');
+        siren_ajax_comment_err('评论只支持Markdown啦，见谅╮(￣▽￣)╭<br>Markdown Supported while <i class="fa fa-code" aria-hidden="true"></i> Forbidden');
         return ($incoming_comment);
     }
     $column_names = $wpdb->get_row("SELECT * FROM information_schema.columns where 
@@ -1872,13 +1731,14 @@ function create_sakura_table()
         );
         $wpdb->insert($sakura_table_name, $manifest);
     }
-    if (iro_opt('random_graphs_mts') && !$wpdb->get_var("SELECT COUNT(*) FROM $sakura_table_name WHERE mate_key = 'mobile_manifest_json'")) {
-        $mobile_manifest = array(
-            "mate_key" => "mobile_manifest_json",
-            "mate_value" => file_get_contents(get_template_directory() . "/manifest/manifest_mobile.json"),
-        );
-        $wpdb->insert($sakura_table_name, $mobile_manifest);
-        
+    if (iro_opt('random_graphs_mts')) {
+        if (!$wpdb->get_var("SELECT COUNT(*) FROM $sakura_table_name WHERE mate_key = 'mobile_manifest_json'")) {
+            $mobile_manifest = array(
+                "mate_key" => "mobile_manifest_json",
+                "mate_value" => file_get_contents(get_template_directory() . "/manifest/manifest_mobile.json"),
+            );
+            $wpdb->insert($sakura_table_name, $mobile_manifest);
+        }
     }
     if (!$wpdb->get_var("SELECT COUNT(*) FROM $sakura_table_name WHERE mate_key = 'json_time'")) {
         $time = array(
@@ -1914,94 +1774,30 @@ function permalink_tip()
 add_action('admin_notices', 'permalink_tip');
 //code end
 
-//发送主题版本号 
-function send_theme_version() {
-    $theme = wp_get_theme();
-    $version = $theme->get('Version');
-    $data = array(
-        'date' => date('Y-m-d H:i:s'),
-        'version' => $version
-    );
-    $args = array(
-        'body' => $data,
-        'timeout' => '5',
-        'redirection' => '5',
-        'httpversion' => '1.0',
-        'blocking' => true,
-        'headers' => array(),
-        'cookies' => array()
-    );
-    wp_remote_post('https://api.maho.cc/ver-stat/index.php', $args);
-}
-
-if (iro_opt('send_theme_version') == '1') {
-if (!wp_next_scheduled('daily_event')) {
-    wp_schedule_event(time(), 'daily', 'daily_event');
-}
-add_action('daily_event', 'send_theme_version');
-}
-
 //解析短代码  
 add_shortcode('task', 'task_shortcode');
 function task_shortcode($attr, $content = '')
 {
-    $out = '<div class="task shortcodestyle"><i class="fa-solid fa-bars"></i>' . $content . '</div>';
+    $out = '<div class="task shortcodestyle"><i class="fa fa-tasks"></i>' . $content . '</div>';
     return $out;
 }
 add_shortcode('warning', 'warning_shortcode');
 function warning_shortcode($attr, $content = '')
 {
-    $out = '<div class="warning shortcodestyle"><i class="fa-solid fa-triangle-exclamation"></i>' . $content . '</div>';
+    $out = '<div class="warning shortcodestyle"><i class="fa fa fa-exclamation-triangle"></i>' . $content . '</div>';
     return $out;
 }
 add_shortcode('noway', 'noway_shortcode');
 function noway_shortcode($attr, $content = '')
 {
-    $out = '<div class="noway shortcodestyle"><i class="fa-solid fa-rectangle-xmark"></i>' . $content . '</div>';
+    $out = '<div class="noway shortcodestyle"><i class="fa fa-times-rectangle"></i>' . $content . '</div>';
     return $out;
 }
 add_shortcode('buy', 'buy_shortcode');
 function buy_shortcode($attr, $content = '')
 {
-    $out = '<div class="buy shortcodestyle"><i class="fa-solid fa-check-to-slot"></i>' . $content . '</div>';
+    $out = '<div class="buy shortcodestyle"><i class="fa fa-check-square"></i>' . $content . '</div>';
     return $out;
-}
-add_shortcode('ghcard', 'gh_card');
-function gh_card($attr, $content = '')
-{
-    extract(shortcode_atts(array("path" => ""), $attr));
-    return '<div class="ghcard"><a href="https://github.com/'. $path .'"><img src="https://github-readme-stats.maho.cc/api'. $content .'" alt="Github-Card"></a></div>';
-}
-
-add_shortcode('showcard', 'show_card');
-function show_card($attr, $content = '')
-{
-    extract(shortcode_atts(array("icon" => "", "title" => "", "img" => "", "color" => ""), $attr));
-    return '<section class="showcard">
-    <div class="img" alt="Show-Card" style="background:url('. $img .');background-size:cover;background-position: center;">
-    <a href="'. $content .'"><button class="showcard-button" style="color:'. $color .' !important;"><i class="fa-solid fa-angle-right"></i></button> </a>
-    </div>
-    <br>
-    <div class="icon">
-    <i class="'. $icon .'"></i>
-    </div>
-    <div class="title">
-    '. $title .'		
-    </div>
-</section>';
-}
-
-add_shortcode('conversations', 'conversations');
-function conversations($attr, $content = '') 
-{
-    extract(shortcode_atts(array("avatar" => "", "direction" => ""), $attr));
-
-    $output = '<div class="conversations-code" style="display: flex; flex-direction: ' . $direction . '; padding: 10px;">';
-    $output .= '<img src="' . $avatar . '" style="width: 40px; height: 40px; border-radius: 50%;">';
-    $output .= '<div class="conversations-code-text">' . $content . '</div>';
-    $output .= '</div>';
-
-    return $output;
 }
 
 //code end
@@ -2016,11 +1812,10 @@ add_filter('mime_types', 'mimvp_filter_mime_types', 10, 1);
 function mimvp_file_is_displayable_image($result, $path)
 {
     $info = @getimagesize($path);
-    // if ($info['mime'] == 'image/webp') {
-    //     $result = true;
-    // }
-    // return $result;
-    return (bool)($info); // 根据文档这里需要返回一个bool
+    if ($info['mime'] == 'image/webp') {
+        $result = true;
+    }
+    return $result;
 }
 add_filter('file_is_displayable_image', 'mimvp_file_is_displayable_image', 10, 2);
 
@@ -2032,7 +1827,7 @@ function xcollapse($atts, $content = null)
     extract(shortcode_atts(array("title" => ""), $atts));
     return '<div style="margin: 0.5em 0;">
     <div class="xControl">
-    <i class="fa-solid fa-angle-down" style="color: #16AF90;"></i> &nbsp;&nbsp;
+    <i class="fa fa-arrow-down" style="color: #9F6F26;"></i> &nbsp;&nbsp;
     <span class="xTitle">' . $title . '</span>&nbsp;&nbsp;==>&nbsp;&nbsp;<a href="javascript:void(0)" class="collapseButton xButton"><span class="xbtn02">展开 / 收缩</span></a>
     <div style="clear: both;"></div>
     </div>
@@ -2044,52 +1839,49 @@ add_shortcode('collapse', 'xcollapse');
 //code end
 
 
-// add_action("wp_ajax_nopriv_getPhoto", "get_photo");
-// add_action("wp_ajax_getPhoto", "get_photo");
-// /**
-//  * 相册模板
-//  * @author siroi <mrgaopw@hotmail.com>
-//  * @return Json
-//  */
-// function get_photo()
-// {
-//     $postId = $_GET['post'];
-//     $page = get_post($postId);
-//     if ($page->post_type != "page") {
-//         $back['code'] = 201;
-//     } else {
-//         $back['code'] = 200;
-//         $back['imgs'] = array();
-//         $dom = new DOMDocument('1.0', 'utf-8');
-//         $meta = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
-//         $dom->loadHTML($meta . $page->post_content);
-//         $imgS = $dom->getElementsByTagName('img');
-//         //<img src="..." data-header="标题" data-info="信息" vertical=false>
-//         foreach ($imgS as $key => $value) {
-//             $attr = $value->attributes;
-//             $header = $attr->getNamedItem('header');
-//             $info = $attr->getNamedItem('data-info');
-//             $vertical = $attr->getNamedItem('vertical');
+add_action("wp_ajax_nopriv_getPhoto", "get_photo");
+add_action("wp_ajax_getPhoto", "get_photo");
+/**
+ * 相册模板
+ * @author siroi <mrgaopw@hotmail.com>
+ * @return Json
+ */
+function get_photo()
+{
+    $postId = $_GET['post'];
+    $page = get_post($postId);
+    if ($page->post_type != "page") {
+        $back['code'] = 201;
+    } else {
+        $back['code'] = 200;
+        $back['imgs'] = array();
+        $dom = new DOMDocument('1.0', 'utf-8');
+        $meta = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
+        $dom->loadHTML($meta . $page->post_content);
+        $imgS = $dom->getElementsByTagName('img');
+        //<img src="..." data-header="标题" data-info="信息" vertical=false>
+        foreach ($imgS as $key => $value) {
+            $attr = $value->attributes;
+            $header = $attr->getNamedItem('header');
+            $info = $attr->getNamedItem('data-info');
+            $vertical = $attr->getNamedItem('vertical');
 
-//             //图片资源地址
-//             $temp['img'] = $value->attributes->getNamedItem('src')->nodeValue;
-//             //图片上的标题
-//             $temp['header'] = $header->nodeValue ?? null;
-//             //图片上的信息
-//             $temp['info'] = $info->nodeValue ?? null;
-//             //是否竖向展示 默认false
-//             $temp['vertical'] = $vertical->nodeValue ?? null;
-//             array_push($back['imgs'], $temp);
-//         }
-//     }
-//     header('Content-Type:application/json;charset=utf-8');
-//     echo json_encode($back);
-//     exit();
-// }
-
-if (!iro_opt('login_language_opt') == '1') {
-add_filter( 'login_display_language_dropdown', '__return_false' );
+            //图片资源地址
+            $temp['img'] = $value->attributes->getNamedItem('src')->nodeValue;
+            //图片上的标题
+            $temp['header'] = $header->nodeValue ?? null;
+            //图片上的信息
+            $temp['info'] = $info->nodeValue ?? null;
+            //是否竖向展示 默认false
+            $temp['vertical'] = $vertical->nodeValue ?? null;
+            array_push($back['imgs'], $temp);
+        }
+    }
+    header('Content-Type:application/json;charset=utf-8');
+    echo json_encode($back);
+    exit();
 }
+
 
 if (iro_opt('captcha_select') === 'iro_captcha') {
     function login_CAPTCHA()
@@ -2112,22 +1904,22 @@ if (iro_opt('captcha_select') === 'iro_captcha') {
         if (empty($_POST)) {
             return new WP_Error();
         }
-        if (!(isset($_POST['yzm']) && !empty(trim($_POST['yzm'])))) {
+        if (isset($_POST['yzm']) && !empty(trim($_POST['yzm']))) {
+            if (!isset($_POST['timestamp']) || !isset($_POST['id']) || !preg_match('/^[\w$.\/]+$/', $_POST['id']) || !ctype_digit($_POST['timestamp'])) {
+                return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
+            }
+            include_once('inc/classes/Captcha.php');
+            $img = new Sakura\API\Captcha;
+            $check = $img->check_captcha($_POST['yzm'], $_POST['timestamp'], $_POST['id']);
+            if ($check['code'] == 5) {
+                return $user;
+            } else {
+                return new WP_Error('prooffail', '<strong>错误</strong>：' . $check['msg']);
+                //return home_url('/wp-admin/');
+            }
+        } else {
             return new WP_Error('prooffail', '<strong>错误</strong>：验证码为空！');
         }
-        if (!isset($_POST['timestamp']) || !isset($_POST['id']) || !preg_match('/^[\w$.\/]+$/', $_POST['id']) || !ctype_digit($_POST['timestamp'])) {
-            return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
-        }
-        include_once('inc/classes/Captcha.php');
-        $img = new Sakura\API\Captcha;
-        $check = $img->check_captcha($_POST['yzm'], $_POST['timestamp'], $_POST['id']);
-        if ($check['code'] == 5) {
-            return $user;
-        }
-        return new WP_Error('prooffail', '<strong>错误</strong>：' . $check['msg']);
-            //return home_url('/wp-admin/');
-            
-        
     }
     add_filter('authenticate', 'CAPTCHA_CHECK', 20, 3);
     /**
@@ -2148,9 +1940,9 @@ if (iro_opt('captcha_select') === 'iro_captcha') {
             if ($check['code'] != 5) {
                 return $errors->add('invalid_department ', '<strong>错误</strong>：' . $check['msg']);
             }
+        } else {
+            return $errors->add('invalid_department', '<strong>错误</strong>：验证码为空！');
         }
-        return $errors->add('invalid_department', '<strong>错误</strong>：验证码为空！');
-        
     }
 
     add_action('lostpassword_post', 'lostpassword_CHECK');
@@ -2162,19 +1954,21 @@ if (iro_opt('captcha_select') === 'iro_captcha') {
         if (empty($_POST)) {
             return new WP_Error();
         }
-        if (!(isset($_POST['yzm']) && !empty(trim($_POST['yzm'])))) {
+        if (isset($_POST['yzm']) && !empty(trim($_POST['yzm']))) {
+            if (!isset($_POST['timestamp']) || !isset($_POST['id']) || !preg_match('/^[\w$.\/]+$/', $_POST['id']) || !ctype_digit($_POST['timestamp'])) {
+                return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
+            }
+            include_once('inc/classes/Captcha.php');
+            $img = new Sakura\API\Captcha;
+            $check = $img->check_captcha($_POST['yzm'], $_POST['timestamp'], $_POST['id']);
+            if ($check['code'] == 5) {
+                return $errors;
+            } else {
+                return new WP_Error('prooffail', '<strong>错误</strong>：' . $check['msg']);
+            }
+        } else {
             return new WP_Error('prooffail', '<strong>错误</strong>：验证码为空！');
         }
-        if (!isset($_POST['timestamp']) || !isset($_POST['id']) || !preg_match('/^[\w$.\/]+$/', $_POST['id']) || !ctype_digit($_POST['timestamp'])) {
-            return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
-        }
-        include_once('inc/classes/Captcha.php');
-        $img = new Sakura\API\Captcha;
-        $check = $img->check_captcha($_POST['yzm'], $_POST['timestamp'], $_POST['id']);
-        if ($check['code'] == 5) return $errors;
-
-        return new WP_Error('prooffail', '<strong>错误</strong>：' . $check['msg']);
-        
     }
     add_filter('registration_errors', 'registration_CAPTCHA_CHECK', 2, 3);
 } elseif (iro_opt('captcha_select') === 'vaptcha') {
@@ -2192,35 +1986,33 @@ if (iro_opt('captcha_select') === 'iro_captcha') {
         if (empty($_POST)) {
             return new WP_Error();
         }
-        if (!(isset($_POST['vaptcha_server']) && isset($_POST['vaptcha_token']))) {
+        if (isset($_POST['vaptcha_server']) && isset($_POST['vaptcha_token'])) {
+            if (!preg_match('/^https:\/\/([\w-]+\.)+[\w-]*([^<>=?\"\'])*$/', $_POST['vaptcha_server']) || !preg_match('/^[\w\-\$]+$/', $_POST['vaptcha_token'])) {
+                return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
+            }
+            include_once('inc/classes/Vaptcha.php');
+            $url = $_POST['vaptcha_server'];
+            $token = $_POST['vaptcha_token'];
+            $ip = get_the_user_ip();
+            $vaptcha = new Sakura\API\Vaptcha;
+            $response = $vaptcha->checkVaptcha($url, $token, $ip);
+            if ($response->msg && $response->success && $response->score) {
+                if ($response->success === 1 && $response->score >= 70) {
+                    return $user;
+                } else if ($response->success === 0) {
+                    $errorcode = $response->msg;
+                    return new WP_Error('prooffail', '<strong>错误</strong>：' . $errorcode);
+                } else {
+                    return new WP_Error('prooffail', '<strong>错误</strong>：人机验证失败');
+                }
+            } else if (is_string($response)) {
+                return new WP_Error('prooffail', '<strong>错误</strong>：' . $response);
+            } else {
+                return new WP_Error('prooffail', '<strong>错误</strong>：未知错误');
+            }
+        } else {
             return new WP_Error('prooffail', '<strong>错误</strong>：请先进行人机验证');
-
         }
-        if (!preg_match('/^https:\/\/([\w-]+\.)+[\w-]*([^<>=?\"\'])*$/', $_POST['vaptcha_server']) || !preg_match('/^[\w\-\$]+$/', $_POST['vaptcha_token'])) {
-            return new WP_Error('prooffail', '<strong>错误</strong>：非法数据');
-        }
-        include_once('inc/classes/Vaptcha.php');
-        $url = $_POST['vaptcha_server'];
-        $token = $_POST['vaptcha_token'];
-        $ip = get_the_user_ip();
-        $vaptcha = new Sakura\API\Vaptcha;
-        $response = $vaptcha->checkVaptcha($url, $token, $ip);
-        if ($response->msg && $response->success && $response->score) {
-            if ($response->success === 1 && $response->score >= 70) {
-                return $user;
-            }
-            if ($response->success === 0) {
-                $errorcode = $response->msg;
-                return new WP_Error('prooffail', '<strong>错误</strong>：' . $errorcode);
-            }
-            return new WP_Error('prooffail', '<strong>错误</strong>：人机验证失败');
-            
-        } else if (is_string($response)) {
-            return new WP_Error('prooffail', '<strong>错误</strong>：' . $response);
-        }
-        return new WP_Error('prooffail', '<strong>错误</strong>：未知错误');
-        
-
     }
     add_filter('authenticate', 'checkVaptchaAction', 20, 3);
 }
@@ -2235,3 +2027,6 @@ function should_show_title():bool{
     || !get_post_thumbnail_id($id) 
     && $use_as_thumb != 'true' && !get_post_meta($id, 'video_cover', true);
 }
+
+
+

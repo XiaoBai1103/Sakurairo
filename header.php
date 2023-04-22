@@ -11,19 +11,14 @@
  */
 
 $mashiro_logo = iro_opt('mashiro_logo');
-$vision_resource_basepath = iro_opt('vision_resource_basepath');
+
 ?>
 <?php header('X-Frame-Options: SAMEORIGIN'); ?>
 <!DOCTYPE html>
 <!-- 
-            ◢＼　 ☆　　 ／◣
-    　  　∕　　﹨　╰╮∕　　﹨
-    　  　▏　　～～′′～～ 　｜
-    　　  ﹨／　　　　　　 　＼∕
-    　 　 ∕ 　　●　　　 ●　＼
-      ＝＝　○　∴·╰╯　∴　○　＝＝
-    　    ╭──╮　　　　　╭──╮
-  ╔═ ∪∪∪═Mashiro&Hitomi═∪∪∪═╗
+	本人在原作者的代码基础上做了少量修改，由于本人水平一般，可能会造成一些bug，目前一些神奇的bug我还没解决  QAQ
+
+   欢迎大家点击页尾的链接去支持下原作者
 -->
 <html <?php language_attributes(); ?>>
 
@@ -32,7 +27,8 @@ $vision_resource_basepath = iro_opt('vision_resource_basepath');
 	<meta charset="<?php bloginfo('charset'); ?>">
 	<!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
-    <link rel="stylesheet" href="<?= $vision_resource_basepath ?>fontawesome/css/all.min.css" type="text/css" media="all"/>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css"><!--2D看板娘样式表-->
+	
 	<?php
 	if (iro_opt('iro_meta') == true) {
 		$keywords = '';
@@ -74,7 +70,7 @@ $vision_resource_basepath = iro_opt('vision_resource_basepath');
 	}
 	?>
 	<?php wp_head(); ?>
-	<link rel="stylesheet" href="https://<?php echo iro_opt('gfonts_api', 'fonts.loli.net'); ?>/css?family=Noto+Serif|Noto+Serif+SC|Noto+Sans+SC|Dela+Gothic+One|Fira+Code<?php echo iro_opt('gfonts_add_name'); ?>&display=swap" media="all">
+	<link rel="stylesheet" href="https://<?php echo iro_opt('gfonts_api', 'fonts.loli.net'); ?>/css?family=Merriweather+Sans|Noto+Serif|Noto+Serif+SC|Source+Code+Pro|Ubuntu:400,700<?php echo iro_opt('gfonts_add_name'); ?>&display=swap" media="all">
 	<script type="text/javascript">
 		if (!!window.ActiveXObject || "ActiveXObject" in window) { //is IE?
 			alert('朋友，IE浏览器未适配哦~\n如果是 360、QQ 等双核浏览器，请关闭 IE 模式！');
@@ -114,9 +110,11 @@ $vision_resource_basepath = iro_opt('vision_resource_basepath');
 						<span class="logolink moe-mashiro">
 							<a href="<?php bloginfo('url'); ?>">
 								<ruby>
-									<span class="sakuraso"><?php echo $mashiro_logo['text_a']; ?></span>
+									<span class="sakuraso">
+										<?php echo $mashiro_logo['text_a']; ?>
+									</span>
 									<span class="no"><?php echo $mashiro_logo['text_b']; ?></span>
-									<span class="shironeko"><?php echo $mashiro_logo['text_c']; ?></span>
+									<span class="shironeko"><?php echo iro_opt('logo_text'); ?><?php echo $mashiro_logo['text_c']; ?></span>
 									<rp></rp>
 									<rt class="chinese-font"><?php echo $mashiro_logo['text_secondary']; ?></rt>
 									<rp></rp>
@@ -129,7 +127,7 @@ $vision_resource_basepath = iro_opt('vision_resource_basepath');
 			</div><!-- .site-branding -->
 			<?php header_user_menu();
 			if (iro_opt('nav_menu_search') == '1') { ?>
-				<div class="searchbox js-toggle-search"><i class="fa-solid fa-magnifying-glass"></i></div>
+				<div class="searchbox"><i class="iconfont js-toggle-search iconsearch icon-search"></i></div>
 			<?php } ?>
 			<div class="lower"><?php if (iro_opt('nav_menu_display') == 'fold') { ?>
 					<div id="show-nav" class="showNav">
@@ -141,6 +139,8 @@ $vision_resource_basepath = iro_opt('vision_resource_basepath');
 			</div>
 		</div>
 	</header><!-- #masthead -->
+	
+	
 	<div class="openNav no-select">
 		<div class="iconflat no-select">
 			<div class="icon"></div>

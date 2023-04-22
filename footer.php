@@ -9,6 +9,7 @@
  * @package Sakura
  */
 
+$mashiro_logo = iro_opt('mashiro_logo');
 $reception_background = iro_opt('reception_background');
 ?>
 	</div><!-- #content -->
@@ -22,25 +23,21 @@ $reception_background = iro_opt('reception_background');
 				<div class="img-preload">
 					<img src="<?php echo iro_opt('load_nextpage_svg'); ?>"><!-- 加载下一部分圈圈 -->
 				</div>
+				<?php if (iro_opt('footer_sakura_icon', 'true')): ?>
+				<i class="iconfont icon-sakura rotating" style="color: <?php echo iro_opt('theme_skin_matching'); ?>;display:inline-block;font-size:26px"></i>
+				<?php endif; ?>
 				<p style="color: #666666;"><?php echo iro_opt('footer_info', ''); ?></p>
 			</div>
-			<div class="footer-device function_area">
+			<div class="footer-device Ubuntu-font">
 					<?php if(iro_opt('footer_yiyan')){ ?>
 						<p id="footer_yiyan"></p>
 						<?php } ?>
 					<span style="color: #b9b9b9;">
 						<?php /* 能保留下面两个链接吗？算是我一个小小的心愿吧~ */ ?>
 						<?php if (iro_opt('footer_load_occupancy', 'true')): ?>
-                        <?php printf(
-                            _x( 'Load Time %.3f seconds | %d Query | RAM Usage %.2f MB ', 'footer load occupancy', 'sakurairo' ),
-                            timer_stop( 0, 3 ),get_num_queries(),memory_get_peak_usage() / 1024 / 1024);
-                        ?>
+                        <?php printf(' 耗时 %.3f 秒 | 查询 %d 次 | 内存 %.2f MB',timer_stop( 0, 3 ),get_num_queries(),memory_get_peak_usage() / 1024 / 1024);?>
                         <?php endif; ?>
-						<?php if (iro_opt('footer_upyun', 'true')): ?>
-							本网站由 <a href="https://www.upyun.com/?utm_source=lianmeng&utm_medium=referral" target="_blank"> <img alt="upyun-logo" src="https://s.nmxc.ltd/sakurairo_vision/@2.6/options/upyun_logo.webp"  style="display:inline-block;vertical-align:middle;width:60px;height:30px;"/> 提供 CDN 加速 / 云存储 服务
-                        <?php endif; ?>
-                        <br>
-						<a href="https://github.com/mirai-mamori/Sakurairo" rel="noopener" target="_blank" id="site-info" >Theme Sakurairo</a><a href="https://fuukei.org/" rel="noopener" target="_blank" id="site-info" > by Fuukei</a> 
+						Theme <a href="https://github.com/mirai-mamori/Sakurairo" rel="noopener" target="_blank" id="site-info" >Sakurairo</a>  by <a href="https://iro.tw" rel="noopener" target="_blank" id="site-info" >Fuukei</a> 
 					</span>
 			</div>
 		</div><!-- .site-info -->
@@ -52,7 +49,7 @@ $reception_background = iro_opt('reception_background');
 			<?php 
 			$personal_avatar = iro_opt('personal_avatar');
 			$iro_logo = iro_opt('iro_logo');
-			$ava = iro_opt('personal_avatar') ? $personal_avatar: ($iro_logo ?: iro_opt('vision_resource_basepath','https://s.nmxc.ltd/sakurairo_vision/@2.6/').'series/avatar.webp'); ?>
+			$ava = iro_opt('personal_avatar') ? $personal_avatar: ($iro_logo ?: iro_opt('vision_resource_basepath','https://x.jscdn.host/release/ucode-x/source/Sakurairo_Vision/@2.4/').'series/avatar.webp'); ?>
 			<img src="<?php echo $ava ?>">
 		</div>
 		<div class="m-search">
@@ -62,13 +59,14 @@ $reception_background = iro_opt('reception_background');
 		</div>
 		<?php wp_nav_menu( array( 'depth' => 2, 'theme_location' => 'primary', 'container' => false ) ); ?>
 	</div><!-- m-nav-center end -->
-	<button id="moblieGoTop" title="<?=__('Go to top','sakurairo');?>"><i class="fa-solid fa-caret-up fa-lg"></i></button>
-    <button id="changskin"><i class="fa-solid fa-gear fa-spin fa-lg" ></i></button>
+	<button id="moblieGoTop" title="<?=__('Go to top','sakurairo');?>"><i class="fa fa-chevron-up" aria-hidden="true"></i></button>
+    <button id="changskin"><i class="iconfont icon-gear inline-block rotating"></i></button>
 	<!-- search start -->
 	<form class="js-search search-form search-form--modal" method="get" action="<?php echo home_url(); ?>" role="search">
 		<div class="search-form__inner">
 		<?php if(iro_opt('live_search')){ ?>
 			<div class="micro">
+				<i class="iconfont icon-search"></i>
 				<input id="search-input" class="text-input" type="search" name="s" placeholder="<?php _e('Want to find something?', 'sakurairo') /*想要找点什么呢*/?>" required>
 			</div>
 			<div class="ins-section-wrapper">
@@ -78,6 +76,7 @@ $reception_background = iro_opt('reception_background');
 		<?php }else{ ?>
 			<div class="micro">
 				<p class="micro mb-"><?php _e('Want to find something?', 'sakurairo') /*想要找点什么呢*/?></p>
+				<i class="iconfont icon-search"></i>
 				<input class="text-input" type="search" name="s" placeholder="<?php _e('Search', 'sakurairo') ?>" required>
 			</div>
 		<?php } ?>
@@ -88,49 +87,49 @@ $reception_background = iro_opt('reception_background');
 <?php wp_footer(); ?>
 <div class="skin-menu no-select">
 <?php if(iro_opt('style_menu_display') == 'full'): ?>
-	<p style="margin-bottom: 0.5em;"><?php echo iro_opt('style_menu_reception_text', ''); ?></p>
+	<p style="margin-bottom: 0.5em;">Style</p>
 <?php endif; ?>
     <div class="theme-controls row-container">
         <ul class="menu-list">
             <li id="white-bg">
-			<i class="fa-solid fa-display fa-sm"></i>
+                <i class="fa fa-television faa-tada animated-hover faa-fast" aria-hidden="true"></i>
 			</li><!--Default-->
 			<?php if($reception_background['heart_shaped'] == '1'): ?>
             <li id="diy1-bg">
-			<i class="fa-regular fa-heart"></i>
+			    <i class="fa fa-heart-o faa-pulse animated-hover faa-fast" aria-hidden="true"></i>
 			</li><!--Diy1-->
 			<?php endif; ?>
 			<?php if($reception_background['star_shaped'] == '1'): ?>
             <li id="diy2-bg">
-			<i class="fa-regular fa-star"></i>
+                <i class="fa fa-star-o faa-float animated-hover faa-fast" aria-hidden="true"></i>
 			</li><!--Diy2-->
 			<?php endif; ?>
 			<?php if($reception_background['square_shaped'] == '1'): ?>
             <li id="diy3-bg">
-			<i class="fa-brands fa-delicious"></i>
+			    <i class="fa fa-delicious faa-horizontal animated-hover faa-fast" aria-hidden="true"></i>
 			</li><!--Diy3-->
 			<?php endif; ?>
 			<?php if($reception_background['lemon_shaped'] == '1'): ?>
             <li id="diy4-bg">
-			<i class="fa-regular fa-lemon"></i>
+			    <i class="fa fa-lemon-o faa-wrench animated-hover faa-fast" aria-hidden="true"></i>
 			</li><!--Diy4-->
 			<?php endif; ?>
             <li id="dark-bg">
-			<i class="fa-regular fa-moon"></i>
+                <i class="fa fa-moon-o faa-passing animated-hover faa-fast" aria-hidden="true"></i>
             </li><!--Night-->
         </ul>
 	</div>
 	<?php if(iro_opt('style_menu_display') == 'full'): ?>
-	<p style="margin-bottom: 0.1em;"><?php echo iro_opt('style_menu_font_area_text', ''); ?></p>
+	<p style="margin-bottom: 0.1em;">Fonts</p>
     <div class="font-family-controls row-container">
-        <button type="button" class="control-btn-serif selected" data-name="serif" ><i class="fa-solid fa-font"></i></button>
-        <button type="button" class="control-btn-sans-serif" data-name="sans-serif"><i class="fa-solid fa-bold"></i></button>
+        <button type="button" class="control-btn-serif selected" data-name="serif" ><i class="fa fa-font faa-vertical animated-hover" aria-hidden="true"></i></button>
+        <button type="button" class="control-btn-sans-serif" data-name="sans-serif"><i class="fa fa-bold faa-vertical animated-hover" aria-hidden="true"></i></button>
 	</div>
 	<?php endif; ?>
 </div>
 <?php if (iro_opt('sakura_widget')) : ?>
 	<aside id="secondary" class="widget-area" role="complementary" style="left: -400px;">
-    <div class="heading"><?php _e('Widgets','sakurairo') /*小工具*/ ?></div>
+    <div class="heading"><?php _e('Widgets') /*小工具*/ ?></div>
     <div class="sakura_widget">
 	<?php if (function_exists('dynamic_sidebar') && dynamic_sidebar('sakura_widget')) : endif; ?>
 	</div>
@@ -142,12 +141,15 @@ $reception_background = iro_opt('reception_background');
 	    class="aplayer"
         data-id="<?php echo iro_opt('aplayer_playlistid', ''); ?>"
         data-server="<?php echo iro_opt('aplayer_server'); ?>"
+		   
 		data-preload="<?php echo iro_opt('aplayer_preload'); ?>"
         data-type="playlist"
         data-fixed="true"
+		
 		data-order="<?php echo iro_opt('aplayer_order'); ?>"
         data-volume="<?php echo iro_opt('aplayer_volume', ''); ?>"
         data-theme="<?php echo iro_opt('theme_skin'); ?>">
+		
     </div>
 <?php endif; ?>
 
@@ -156,10 +158,34 @@ $reception_background = iro_opt('reception_background');
 <link rel="stylesheet" href="<?php global $shared_lib_basepath;echo $shared_lib_basepath?>/css/wave.css">
 <?php endif; ?>
 
+<!-- Live2D看板娘 -->
+<?php if (iro_opt('live2d_options', 'true')): ?>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/gh/<?php echo iro_opt('live2d_custom_user'); ?>/live2d-widget@<?php echo iro_opt('live2d_custom_user_ver'); ?>/autoload.js"></script> 
+<?php endif; ?>
+<!-- logo字体部分 -->
+<?php if (iro_opt('mashiro_logo_option') == true) { ?>
+	<link rel="stylesheet" href="<?php echo $mashiro_logo['font_link']; ?>" media="all">
+<?php } ?>
 <?php
 echo iro_opt('footer_addition', '');
 ?>
 </body>
+<!-- 网易云部分-->
+<link rel="stylesheet" href="wp-content/themes/Sakurairo-master/css/APlayer.min.css">
+<script src="wp-content/themes/Sakurairo-master/js/APlayer.min.js"></script>
+<div class="aplayer"
+    data-id="7386193290"
+    data-fixed="true"
+    data-server="netease"
+    data-volume="0.4"
+    data-type="playlist"
+	  data-order= "random"        
+	 data-autoplay="true">
+</div>
+<script src="wp-content/themes/Sakurairo-master/js/Meting.min.js"></script>
+
+
+
 <!-- Particles动效 -->
 <?php if (iro_opt('particles_effects', 'true')): ?>
 <style>
